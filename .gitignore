@@ -1,0 +1,9 @@
+node_modules
+yarn.lock
+src/bundle.js
+build
+*.rar
+*/obj/Debug
+*/bin/Interface.dll
+*/bin/Interface.pdb
+*/Web.config
