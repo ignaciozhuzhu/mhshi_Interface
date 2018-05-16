@@ -367,6 +367,7 @@ namespace mhshi.ajax
         }
         #endregion
 
+
         #region 查看是否已绑定过用户
         /// <summary>
         /// 查看是否已绑定过用户
@@ -1258,51 +1259,32 @@ namespace mhshi.ajax
         }
         #endregion
 
-        
-        //banner列表
+        //以下为后台接口
+
+        #region banner列表
+        /// <summary>
+        /// banner列表
+        /// <summary>
         private void getbanner()
         {
-            var content = "";
+            var name = "";
             try
             {
-                content = HttpContext.Current.Request["content"];
+                name = HttpContext.Current.Request["name"];
             }
             catch { }
-            var beginDate = "";
+            var isList = "";
             try
             {
-                beginDate = HttpContext.Current.Request["beginDate"];
-            }
-            catch { }
-            var endDate = "";
-            try
-            {
-                endDate = HttpContext.Current.Request["endDate"];
-            }
-            catch { }
-            var status = "";
-            try
-            {
-                status = HttpContext.Current.Request["status"];
-            }
-            catch { }
-            var anserType = "";
-            try
-            {
-                anserType = HttpContext.Current.Request["anserType"];
+                isList = HttpContext.Current.Request["isList"];
             }
             catch { }
             var str = " where 1=1 ";
-            if (content != "" && content != null)
-                str += "and ([content] like '%" + content + "%' or nickName like '%" + content + "%')";
-            if (beginDate != "" && beginDate != null)
-                str += " and askDate >=  '" + beginDate + "'";
-            if (endDate != "" && endDate != null)
-                str += " and askDate <=  '" + endDate + "'";
-            if (status != "" && status != null)
-                str += " and status =  " + status + "";
-            if (anserType != "" && anserType != null)
-                str += " and anserType =  " + anserType + "";
+            if (name != "" && name != null && name != "undefined")
+                str += "and (name like '%" + name + "%')";
+            if (isList != "" && isList != null && isList != "undefined")
+                str += " and isList =  " + isList + "";
+            str += " order by sort ";
             var ticket = getBanner(str);
             HttpContext.Current.Response.Write(ticket);
         }
@@ -1314,20 +1296,805 @@ namespace mhshi.ajax
         {
             SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
             con.Open();
-            //  DataSet ds = new DataSet(); //创建数据集对象
-            //  dbAdapter.Fill(ds);
             SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
-            // lo_cmd.CommandText = "select * from dbo.linecategory";   //写SQL语句
             lo_cmd.CommandText = "select id as [key],name as [no],bannerUrl as avatar,sort,isList as status from mhs_t_banner " + str;
             lo_cmd.Connection = con;             //指定连接对象，即上面创建的
-            // SqlDataReader lo_reader = lo_cmd.ExecuteReader();//返回结果集
             SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
             DataSet ds = new DataSet(); //创建数据集对象
             dbAdapter.Fill(ds);
             string json = ConvertJson.DataTable2Array(ds.Tables[0]);
             json = "" + json.Replace("'", "\"") + "";
+
+            json = "{\"list\":" + json + "}";
             return json;
         }
+
+        #endregion banner列表
+
+
+
+        #region 新增banner
+        /// <summary>
+        /// 新增banner
+        /// <summary>
+        private void insertbanner()
+        {
+            var formData = WebUtility.HtmlDecode(HttpContext.Current.Request.Form.ToString());
+            formData = HttpContext.Current.Server.UrlDecode(formData);
+            formData = formData.Substring(5, formData.Length - 5);
+            var formJson = JsonConvert.DeserializeObject<Imgurl>(formData);
+            var imgurl = formJson.imgurl;
+
+            var ticket = insertBanner(imgurl);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 新增banner
+        /// </summary>
+        public static string insertBanner(string imgurl)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            string str = "insert into mhs_t_banner(name,bannerUrl,sort,isList,updateTime) values('默认','" + imgurl + "',10,1,'" + DateTime.Now + "')";
+            lo_cmd.CommandText = str;
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = "{\"data\":\"添加成功\"}";
+            return json;
+        }
+
+        #endregion 新增banner
+
+
+        #region 编辑banner
+        /// <summary>
+        /// 编辑banner
+        /// <summary>
+        private void editbanner()
+        {
+            var name = "";
+            try
+            {
+                name = HttpContext.Current.Request["name"];
+            }
+            catch { }
+            var sort = "";
+            try
+            {
+                sort = HttpContext.Current.Request["sort"];
+            }
+            catch { }
+            var isList = "";
+            try
+            {
+                isList = HttpContext.Current.Request["isList"];
+            }
+            catch { }
+            var id = 0;
+            try
+            {
+                id = Convert.ToInt32(HttpContext.Current.Request["id"]);
+            }
+            catch { }
+
+            var ticket = editBanner(name, sort, isList, id);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+
+        /// <summary>
+        /// 编辑banner
+        /// </summary>
+        public static string editBanner(string name, string sort, string isList, int id)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            string str = "update mhs_t_banner set name='" + name + "',sort='" + sort + "',isList='" + isList + "' where id=" + id + "";
+            lo_cmd.CommandText = str;
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = "{\"data\":\"操作成功\"}";
+            return json;
+        }
+
+        #endregion 编辑banner
+
+
+        #region 删除banner
+        /// <summary>
+        /// 删除banner
+        /// <summary>
+        private void delbanner()
+        {
+            var id = 0;
+            try
+            {
+                id = Convert.ToInt32(HttpContext.Current.Request["id"]);
+            }
+            catch { }
+
+            var ticket = delBanner(id);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+
+        /// <summary>
+        /// 删除banner
+        /// </summary>
+        public static string delBanner(int id)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            string str = "delete mhs_t_banner where id=" + id + "";
+            lo_cmd.CommandText = str;
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = "{\"data\":\"操作成功\"}";
+            return json;
+        }
+
+        #endregion 删除banner
+
+
+        #region 模拟获取当前用户
+        /// <summary>
+        /// 模拟获取当前用户
+        /// <summary>
+        private void getmockuser()
+        {
+            var name = "";
+            try
+            {
+                name = HttpContext.Current.Request["name"];
+            }
+            catch { }
+            var avatar = "";
+            try
+            {
+                avatar = HttpContext.Current.Request["avatar"];
+            }
+            catch { }
+            var userid = "";
+            try
+            {
+                userid = HttpContext.Current.Request["userid"];
+            }
+            catch { }
+            var ticket = getMockuser(name, avatar, userid);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 模拟获取当前用户
+        /// </summary>
+        public static string getMockuser(string name, string avatar, string userid)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            lo_cmd.CommandText = "select 1";
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            string json = ConvertJson.DataTable2Array(ds.Tables[0]);
+            //json = "" + json.Replace("'", "\"") + "";
+
+            json = "{\"name\":\"世奇\",\"avatar\":\"https://gw.alipayobjects.com/zos/rmsportal/BiazfanxmamNRoxxVxka.png\",\"userid\":\"00000001\",\"notifyCount\": 12}";
+            return json;
+        }
+
+        #endregion banner列表
+
+
+        #region 后台获取问题列表
+        //后台获取问题列表
+        private void getquestionlistadmin()
+        {
+            var content = "";
+            try
+            {
+                content = HttpContext.Current.Request["content"];
+            }
+            catch { }
+            var docName = "";
+            try
+            {
+                docName = HttpContext.Current.Request["docName"];
+            }
+            catch { }
+            var str = " where 1=1 ";
+            if (content != "" && content != null && content != "undefined")
+                str += "and ([content] like '%" + content + "%')";
+            if (docName != "" && docName != null && docName != "undefined")
+                str += "and ( c.nickName like '%" + docName + "%')";
+            var ticket = getQuestionListAdmin(str);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台获取问题列表
+        /// </summary>
+        public static string getQuestionListAdmin(string str)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            lo_cmd.CommandText = "select a.id, a.content,b.nickName,b.avatar,c.avatar as docAvatar,c.nickName as docName,c.special as docSpe,c.fans,c.answeredNum,c.intro,c.hosName from mhs_t_question a left join mhs_t_user b on a.asker=b.id left join mhs_t_user c on a.answer=c.id  " + str;
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = ConvertJson.DataTable2Array(ds.Tables[0]);
+            json = "{\"list\":" + json.Replace("'", "\"") + "}";
+            return json;
+        }
+        #endregion
+
+
+        #region 后台获取回答列表
+        //后台获取回答列表
+        private void getanswerlistadmin()
+        {
+            var qcontent = "";
+            try
+            {
+                qcontent = HttpContext.Current.Request["qcontent"];
+            }
+            catch { }
+            var answer = "";
+            try
+            {
+                answer = HttpContext.Current.Request["answer"];
+            }
+            catch { }
+            var str = " where 1=1 ";
+            if (qcontent != "" && qcontent != null && qcontent != "undefined")
+                str += "and (c.content like '%" + qcontent + "%')";
+            if (answer != "" && answer != null && answer != "undefined")
+                str += "and ( b.nickName like '%" + answer + "%')";
+            var ticket = getAnswerListAdmin(str);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台获取回答列表
+        /// </summary>
+        public static string getAnswerListAdmin(string str)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            lo_cmd.CommandText = "select a.id,a.content acontent,a.voiceUrl,b.nickName answer,c.content qcontent from mhs_t_answer a inner join mhs_t_user b on a.uid=b.id inner join mhs_t_question c on a.qid=c.id" + str;
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = ConvertJson.DataTable2Array(ds.Tables[0]);
+            json = "{\"list\":" + json.Replace("'", "\"") + "}";
+            return json;
+        }
+        #endregion
+
+
+
+        #region 后台获取医生列表
+        //后台获取医生列表
+        private void getdoclist()
+        {
+            var name = "";
+            try
+            {
+                name = HttpContext.Current.Request["name"].ToString();
+            }
+            catch { }
+            var phone = "";
+            try
+            {
+                phone = HttpContext.Current.Request["phone"].ToString();
+            }
+            catch { }
+            var str = " where 1=1 and type=2 ";
+            if (name != "" && name != null && name != "undefined")
+                str += "and (nickName like '%" + name + "%' or realName like '%" + name + "%')";
+            if (phone != "" && phone != null && phone != "undefined")
+                str += "and phone like '%" + phone + "%' ";
+            var ticket = getDocList(str);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台获取医生列表
+        /// </summary>
+        public static string getDocList(string str)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            lo_cmd.CommandText = "select * from mhs_t_user " + str;
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = ConvertJson.DataTable2Array(ds.Tables[0]);
+            json = "{\"list\":" + json.Replace("'", "\"") + "}";
+            return json;
+        }
+        #endregion
+
+
+        #region 后台获取用户列表
+        //后台获取用户列表
+        private void getuserlist()
+        {
+            var name = "";
+            try
+            {
+                name = HttpContext.Current.Request["name"].ToString();
+            }
+            catch { }
+            var phone = "";
+            try
+            {
+                phone = HttpContext.Current.Request["phone"].ToString();
+            }
+            catch { }
+            var str = " where 1=1 and type=1 ";
+            if (name != "" && name != null && name != "undefined")
+                str += "and (nickName like '%" + name + "%' or realName like '%" + name + "%')";
+            if (phone != "" && phone != null && phone != "undefined")
+                str += "and phone like '%" + phone + "%' ";
+            var ticket = getUserList(str);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台获取用户列表
+        /// </summary>
+        public static string getUserList(string str)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            lo_cmd.CommandText = "select * from mhs_t_user " + str;
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = ConvertJson.DataTable2Array(ds.Tables[0]);
+            json = "{\"list\":" + json.Replace("'", "\"") + "}";
+            return json;
+        }
+        #endregion
+
+
+
+        #region 后台获取充值列表
+        //后台获取充值列表
+        private void getrechargelist()
+        {
+            var name = 0;
+            try
+            {
+                name = Convert.ToInt32(HttpContext.Current.Request["name"]);
+            }
+            catch { }
+            var beginDate = "";
+            try
+            {
+                beginDate = HttpContext.Current.Request["beginDate"].ToString();
+            }
+            catch { }
+            var endDate = "";
+            try
+            {
+                endDate = HttpContext.Current.Request["endDate"].ToString();
+            }
+            catch { }
+            var str = " where 1=1 ";
+            if (beginDate != "" && beginDate != null && beginDate != "undefined" && beginDate != "null")
+                str += " and optime >=  '" + beginDate + "'";
+            if (endDate != "" && endDate != null && endDate != "undefined" && beginDate != "null")
+                str += " and optime <=  '" + endDate + "'";
+            var ticket = getRechargelist(str);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台获取充值列表
+        /// </summary>
+        public static string getRechargelist(string str)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            lo_cmd.CommandText = "select a.*,b.nickName name from mhs_t_finance a inner join mhs_t_user b on a.uid=b.id " + str + "";
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = ConvertJson.DataTable2Array(ds.Tables[0]);
+            json = "{\"list\":" + json.Replace("'", "\"") + "}";
+            return json;
+        }
+        #endregion
+
+
+        #region 后台获取提现列表
+        //后台获取提现列表
+        private void getwithdrawlist()
+        {
+            var name = "";
+            try
+            {
+                name = HttpContext.Current.Request["name"].ToString();
+            }
+            catch { }
+            var phone = "";
+            try
+            {
+                phone = HttpContext.Current.Request["phone"].ToString();
+            }
+            catch { }
+            var str = " where 1=1 ";
+            if (name != "" && name != null && name != "undefined")
+                str += "and (nickName like '%" + name + "%' or realName like '%" + name + "%')";
+            if (phone != "" && phone != null && phone != "undefined")
+                str += "and phone like '%" + phone + "%' ";
+            var ticket = getWithdrawList(str);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台获取提现列表
+        /// </summary>
+        public static string getWithdrawList(string str)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            lo_cmd.CommandText = "select 1 " + str;
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = ConvertJson.DataTable2Array(ds.Tables[0]);
+            json = "{\"list\":" + json.Replace("'", "\"") + "}";
+            return json;
+        }
+        #endregion
+
+
+        #region 后台获取医院列表
+        //后台获取医院列表
+        private void gethospitallist()
+        {
+            var ticket = getHospitalList();
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台获取医院列表
+        /// </summary>
+        public static string getHospitalList()
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            lo_cmd.CommandText = "select id as [key], hosName from mhs_t_hos ";
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = ConvertJson.DataTable2Array(ds.Tables[0]);
+            json = "{\"list\":" + json.Replace("'", "\"") + "}";
+            return json;
+        }
+        #endregion
+
+
+        #region 后台更新医院
+        //后台更新医院
+        private void hospitalupdate()
+        {
+            var name = "";
+            try
+            {
+                name = HttpContext.Current.Request["name"].ToString();
+            }
+            catch { }
+            var id = 0;
+            try
+            {
+                id = Convert.ToInt32(HttpContext.Current.Request["id"]);
+            }
+            catch { }
+            var ticket = hospitalUpdate(name, id);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台更新医院
+        /// </summary>
+        public static string hospitalUpdate(string name, int id)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            if (id != 0)
+                lo_cmd.CommandText = "update mhs_t_hos set hosName='" + name + "' where id=" + id + " ";
+            else
+                lo_cmd.CommandText = "insert into mhs_t_hos(hosName) values('" + name + "') ";
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            var result = "{\"data\":\"操作成功\"}";
+            return result;
+        }
+        #endregion
+
+        #region 后台删除医院
+        //后台删除医院
+        private void hospitaldelete()
+        {
+            var id = 0;
+            try
+            {
+                id = Convert.ToInt32(HttpContext.Current.Request["id"]);
+            }
+            catch { }
+            var ticket = hospitalDelete(id);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台删除医院
+        /// </summary>
+        public static string hospitalDelete(int id)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            lo_cmd.CommandText = "delete from mhs_t_hos where id=" + id + " ";
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            var result = "{\"data\":\"操作成功\"}";
+            return result;
+        }
+        #endregion
+
+
+        #region 后台获取科室列表
+        //后台获取科室列表
+        private void getdepartlist()
+        {
+            var ticket = getdepartList();
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台获取科室列表
+        /// </summary>
+        public static string getdepartList()
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            lo_cmd.CommandText = "select id as [key], depName from mhs_t_dep ";
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = ConvertJson.DataTable2Array(ds.Tables[0]);
+            json = "{\"list\":" + json.Replace("'", "\"") + "}";
+            return json;
+        }
+        #endregion
+
+        #region 后台更新科室
+        //后台更新科室
+        private void departupdate()
+        {
+            var name = "";
+            try
+            {
+                name = HttpContext.Current.Request["name"].ToString();
+            }
+            catch { }
+            var id = 0;
+            try
+            {
+                id = Convert.ToInt32(HttpContext.Current.Request["id"]);
+            }
+            catch { }
+            var ticket = departUpdate(name, id);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台更新科室
+        /// </summary>
+        public static string departUpdate(string name, int id)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            if (id != 0)
+                lo_cmd.CommandText = "update mhs_t_dep set depName='" + name + "' where id=" + id + " ";
+            else
+                lo_cmd.CommandText = "insert into mhs_t_dep(depName) values('" + name + "') ";
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            var result = "{\"data\":\"操作成功\"}";
+            return result;
+        }
+        #endregion
+
+        #region 后台删除科室
+        //后台删除科室
+        private void departdelete()
+        {
+            var id = 0;
+            try
+            {
+                id = Convert.ToInt32(HttpContext.Current.Request["id"]);
+            }
+            catch { }
+            var ticket = departDelete(id);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台删除科室
+        /// </summary>
+        public static string departDelete(int id)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            lo_cmd.CommandText = "delete from mhs_t_dep where id=" + id + " ";
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            var result = "{\"data\":\"操作成功\"}";
+            return result;
+        }
+        #endregion
+
+
+        #region 后台获取职称列表
+        //后台获取职称列表
+        private void gettitlelist()
+        {
+            var ticket = gettitleList();
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台获取职称列表
+        /// </summary>
+        public static string gettitleList()
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            lo_cmd.CommandText = "select id as [key], title from mhs_t_title ";
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = ConvertJson.DataTable2Array(ds.Tables[0]);
+            json = "{\"list\":" + json.Replace("'", "\"") + "}";
+            return json;
+        }
+        #endregion
+
+        #region 后台更新职称
+        //后台更新职称
+        private void titleupdate()
+        {
+            var name = "";
+            try
+            {
+                name = HttpContext.Current.Request["name"].ToString();
+            }
+            catch { }
+            var id = 0;
+            try
+            {
+                id = Convert.ToInt32(HttpContext.Current.Request["id"]);
+            }
+            catch { }
+            var ticket = titleUpdate(name, id);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台更新职称
+        /// </summary>
+        public static string titleUpdate(string name, int id)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            if (id != 0)
+                lo_cmd.CommandText = "update mhs_t_title set title='" + name + "' where id=" + id + " ";
+            else
+                lo_cmd.CommandText = "insert into mhs_t_title(title) values('" + name + "') ";
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            var result = "{\"data\":\"操作成功\"}";
+            return result;
+        }
+        #endregion
+
+        #region 后台删除职称
+        //后台删除职称
+        private void titledelete()
+        {
+            var id = 0;
+            try
+            {
+                id = Convert.ToInt32(HttpContext.Current.Request["id"]);
+            }
+            catch { }
+            var ticket = titleDelete(id);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台删除职称
+        /// </summary>
+        public static string titleDelete(int id)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            lo_cmd.CommandText = "delete from mhs_t_title where id=" + id + " ";
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            var result = "{\"data\":\"操作成功\"}";
+            return result;
+        }
+        #endregion
 
 
         /// <summary>
