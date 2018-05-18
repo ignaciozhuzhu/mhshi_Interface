@@ -321,7 +321,7 @@ namespace mhshi.ajax
             con.Open();
             SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
             //    lo_cmd.CommandText = "select a.*,b.nickName,b.avatar,c.avatar as docAvatar,c.nickName as docName,c.special as docSpe,c.fans,c.answeredNum,c.intro,c.hosName from mhs_t_question a left join mhs_t_user b on a.asker=b.id left join mhs_t_user c on a.answer=c.id " + str;
-            lo_cmd.CommandText = "select top " + pageSize + "*from(select row_number()over(order by askDate desc)as rownumber,a.*,b.nickName,b.avatar,c.avatar as docAvatar,c.nickName as docName,c.special as docSpe,c.fans,c.answeredNum,c.intro,c.hosName from mhs_t_question a left join mhs_t_user b on a.asker=b.id left join mhs_t_user c on a.answer=c.id " + str + ")as t where rownumber>" + pageSize * pageNum + "";
+            lo_cmd.CommandText = "select top " + pageSize + "*from(select row_number()over(order by askDate desc)as rownumber,a.*,b.nickName,b.avatar,c.avatar as docAvatar,c.nickName as docName,c.special as docSpe,c.fans,c.answeredNum,c.intro,c.hosName,d.content as acontent from mhs_t_question a left join mhs_t_user b on a.asker=b.id left join mhs_t_user c on a.answer=c.id left join mhs_t_answer d on d.qid=a.id " + str + ")as t where rownumber>" + pageSize * pageNum + "";
             lo_cmd.Connection = con;             //指定连接对象，即上面创建的
             // SqlDataReader lo_reader = lo_cmd.ExecuteReader();//返回结果集
             SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
@@ -1591,7 +1591,7 @@ namespace mhshi.ajax
             SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
             string str = "";
             if (id == 0)
-                lo_cmd.CommandText = str + " insert into mhs_t_question(anserType,direType,content,asker,oxygen,status,askDate) values(2," + direType + ",'" + content + "',0,10,1,'" + DateTime.Now + "')";
+                lo_cmd.CommandText = str + " insert into mhs_t_question(anserType,direType,content,asker,oxygen,status,askDate,isAnon) values(2," + direType + ",'" + content + "',14,10,1,'" + DateTime.Now + "',1)";
             else
                 lo_cmd.CommandText = str + " update mhs_t_question set direType=" + direType + ",content='" + content + "' where id=" + id + " ";
             lo_cmd.Connection = con;             //指定连接对象，即上面创建的
@@ -1737,7 +1737,7 @@ namespace mhshi.ajax
             SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
             string str = "";
             if (id == 0)
-                lo_cmd.CommandText = str + " insert into mhs_t_answer(uid,qid,content) values(14," + qid + ",'" + content + "')";
+                lo_cmd.CommandText = str + " insert into mhs_t_answer(uid,qid,content) values(14," + qid + ",'" + content + "'; update mhs_t_question set answer=14 where id=" + qid + "; )";
             else
                 lo_cmd.CommandText = str + " update mhs_t_answer set content='" + content + "' where id=" + id + " ";
             lo_cmd.Connection = con;             //指定连接对象，即上面创建的
