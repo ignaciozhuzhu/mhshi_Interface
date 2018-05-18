@@ -1510,6 +1510,12 @@ namespace mhshi.ajax
                 content = HttpContext.Current.Request["content"];
             }
             catch { }
+            var direType = "";
+            try
+            {
+                direType = HttpContext.Current.Request["direType"];
+            }
+            catch { }
             var docName = "";
             try
             {
@@ -1519,8 +1525,11 @@ namespace mhshi.ajax
             var str = " where 1=1 ";
             if (content != "" && content != null && content != "undefined")
                 str += "and ([content] like '%" + content + "%')";
+            if (direType != "" && direType != null && direType != "undefined")
+                str += "and a.direType=" + direType + "";
             if (docName != "" && docName != null && docName != "undefined")
                 str += "and ( c.nickName like '%" + docName + "%')";
+            str += " order by a.askDate desc ";
             var ticket = getQuestionListAdmin(str);
             HttpContext.Current.Response.Write(ticket);
         }
@@ -1533,7 +1542,7 @@ namespace mhshi.ajax
             SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
             con.Open();
             SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
-            lo_cmd.CommandText = "select a.id, a.content,b.nickName,b.avatar,c.avatar as docAvatar,c.nickName as docName,c.special as docSpe,c.fans,c.answeredNum,c.intro,c.hosName from mhs_t_question a left join mhs_t_user b on a.asker=b.id left join mhs_t_user c on a.answer=c.id  " + str;
+            lo_cmd.CommandText = "select a.id, a.content,a.direType, b.nickName,b.avatar,c.avatar as docAvatar,c.nickName as docName,c.special as docSpe,c.fans,c.answeredNum,c.intro,c.hosName from mhs_t_question a left join mhs_t_user b on a.asker=b.id left join mhs_t_user c on a.answer=c.id  " + str;
             lo_cmd.Connection = con;             //指定连接对象，即上面创建的
             SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
             DataSet ds = new DataSet(); //创建数据集对象
@@ -1543,6 +1552,105 @@ namespace mhshi.ajax
             json = "{\"list\":" + json.Replace("'", "\"") + "}";
             return json;
         }
+        #endregion
+
+
+        #region 后台更新问题
+        //后台更新问题
+        private void updatequestionadmin()
+        {
+            int direType = 0;
+            try
+            {
+                direType = Convert.ToInt32(HttpContext.Current.Request["direType"]);
+            }
+            catch { }
+            string content = "";
+            try
+            {
+                content = HttpContext.Current.Request["content"];
+            }
+            catch { }
+            var id = 0;
+            try
+            {
+                id = Convert.ToInt32(HttpContext.Current.Request["id"]);
+            }
+            catch { }
+            var ticket = updateQuestionadmin(id, direType, content);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台更新问题
+        /// </summary>
+        public static string updateQuestionadmin(int id, int direType, string content)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            string str = "";
+            if (id == 0)
+                lo_cmd.CommandText = str + " insert into mhs_t_question(anserType,direType,content,asker,oxygen,status,askDate) values(2," + direType + ",'" + content + "',0,10,1,'" + DateTime.Now + "')";
+            else
+                lo_cmd.CommandText = str + " update mhs_t_question set direType=" + direType + ",content='" + content + "' where id=" + id + " ";
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = "{\"data\":\"操作成功\"}";
+            return json;
+        }
+
+        #endregion
+
+
+        #region 后台删除问题
+        //后台删除问题
+        private void deletequestionadmin()
+        {
+            int direType = 0;
+            try
+            {
+                direType = Convert.ToInt32(HttpContext.Current.Request["direType"]);
+            }
+            catch { }
+            string content = "";
+            try
+            {
+                content = HttpContext.Current.Request["content"];
+            }
+            catch { }
+            var id = 0;
+            try
+            {
+                id = Convert.ToInt32(HttpContext.Current.Request["id"]);
+            }
+            catch { }
+            var ticket = deleteQuestionadmin(id);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台删除问题
+        /// </summary>
+        public static string deleteQuestionadmin(int id)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            string str = "";
+            lo_cmd.CommandText = str + " delete from mhs_t_question where id=" + id + " ";
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = "{\"data\":\"操作成功\"}";
+            return json;
+        }
+
         #endregion
 
 
@@ -1567,6 +1675,7 @@ namespace mhshi.ajax
                 str += "and (c.content like '%" + qcontent + "%')";
             if (answer != "" && answer != null && answer != "undefined")
                 str += "and ( b.nickName like '%" + answer + "%')";
+            str += " order by a.id desc ";
             var ticket = getAnswerListAdmin(str);
             HttpContext.Current.Response.Write(ticket);
         }
@@ -1579,7 +1688,7 @@ namespace mhshi.ajax
             SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
             con.Open();
             SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
-            lo_cmd.CommandText = "select a.id,a.content acontent,a.voiceUrl,b.nickName answer,c.content qcontent from mhs_t_answer a inner join mhs_t_user b on a.uid=b.id inner join mhs_t_question c on a.qid=c.id" + str;
+            lo_cmd.CommandText = "select a.id,a.content acontent,a.voiceUrl,b.nickName answer,c.content qcontent,c.id qid from mhs_t_answer a inner join mhs_t_user b on a.uid=b.id inner join mhs_t_question c on a.qid=c.id" + str;
             lo_cmd.Connection = con;             //指定连接对象，即上面创建的
             SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
             DataSet ds = new DataSet(); //创建数据集对象
@@ -1591,6 +1700,104 @@ namespace mhshi.ajax
         }
         #endregion
 
+
+        #region 后台更新回答
+        //后台更新回答
+        private void updateansweradmin()
+        {
+            int qid = 0;
+            try
+            {
+                qid = Convert.ToInt32(HttpContext.Current.Request["qid"]);
+            }
+            catch { }
+            string content = "";
+            try
+            {
+                content = HttpContext.Current.Request["content"];
+            }
+            catch { }
+            var id = 0;
+            try
+            {
+                id = Convert.ToInt32(HttpContext.Current.Request["id"]);
+            }
+            catch { }
+            var ticket = updateAnsweradmin(id, qid, content);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台更新回答
+        /// </summary>
+        public static string updateAnsweradmin(int id, int qid, string content)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            string str = "";
+            if (id == 0)
+                lo_cmd.CommandText = str + " insert into mhs_t_answer(uid,qid,content) values(14," + qid + ",'" + content + "')";
+            else
+                lo_cmd.CommandText = str + " update mhs_t_answer set content='" + content + "' where id=" + id + " ";
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = "{\"data\":\"操作成功\"}";
+            return json;
+        }
+
+        #endregion
+
+
+        #region 后台删除回答
+        //后台删除回答
+        private void deleteansweradmin()
+        {
+            int direType = 0;
+            try
+            {
+                direType = Convert.ToInt32(HttpContext.Current.Request["direType"]);
+            }
+            catch { }
+            string content = "";
+            try
+            {
+                content = HttpContext.Current.Request["content"];
+            }
+            catch { }
+            var id = 0;
+            try
+            {
+                id = Convert.ToInt32(HttpContext.Current.Request["id"]);
+            }
+            catch { }
+            var ticket = deleteAnsweradmin(id);
+            HttpContext.Current.Response.Write(ticket);
+        }
+
+        /// <summary>
+        /// 后台删除回答
+        /// </summary>
+        public static string deleteAnsweradmin(int id)
+        {
+            SqlConnection con = new SqlConnection(CONN); //注意与上面的区分开
+            con.Open();
+            SqlCommand lo_cmd = new SqlCommand();   //创建命令对象
+            string str = "";
+            lo_cmd.CommandText = str + " delete from mhs_t_answer where id=" + id + " ";
+            lo_cmd.Connection = con;             //指定连接对象，即上面创建的
+            SqlDataAdapter dbAdapter = new SqlDataAdapter(lo_cmd); //注意与上面的区分开
+            DataSet ds = new DataSet(); //创建数据集对象
+            dbAdapter.Fill(ds);
+            con.Close();
+            string json = "{\"data\":\"操作成功\"}";
+            return json;
+        }
+
+        #endregion
 
 
         #region 后台获取医生列表
@@ -2095,6 +2302,7 @@ namespace mhshi.ajax
             return result;
         }
         #endregion
+
 
 
         /// <summary>
